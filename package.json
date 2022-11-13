@@ -27,6 +27,7 @@
     "node-record-lpcm16": "^1.0.1",
     "puppeteer": "^19.2.0",
     "ref-napi": ">=2.0.0",
+    "sox": "^0.1.0",
     "speaker": "^0.5.4",
     "vosk": "^0.3.39",
     "wav": "^1.0.2",
