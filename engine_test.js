@@ -20,6 +20,10 @@ var caller;
 var step_is_running = false;
 
 
+notifier.on('restart-script-steps', () => {
+    script_step = 1;
+});
+
 notifier.on('recognize-from-microphone-end', () => {
     console.log('recognize-from-microphone-end');
     console.log('silence_ctr: ', silence_ctr);
@@ -29,22 +33,26 @@ notifier.on('recognize-from-microphone-end', () => {
         silence_ctr++;
 
         if (silence_ctr >= 1) {
-            engine.evaluateResponse(script_step, audio_transcription);
-            script_step++;
+            // engine.evaluateResponse(script_step, audio_transcription);
+            // vosk.pauseMicRecognizer();
         }
     }
 });
 
 notifier.on('audio-started-playing', () => {
     console.log('audio started playing');
-    audio_is_playing = true;
+    return vosk.pauseMicRecognizer();
+    // audio_is_playing = true;
 });
 
 notifier.on('audio-finished-playing', () => {
     console.log('audio finished playing');
-    audio_is_playing = false;
-    audio_transcription = undefined;
-    silence_ctr = 0;
+    return vosk.resumeMicRecognizer();
+    // vosk.recognizeFromMicrophone();
+    // audio_is_playing = false;
+    // audio_transcription = undefined;
+    // silence_ctr = 0;
+    // script_step++;
 });
 
 notifier.on('back-one-step', () => {
@@ -61,6 +69,9 @@ notifier.on('transfer-call', () => {
     console.log('success, transfer call...');
     //script_step -=1;
 });
+
+vosk.recognizeFromMicrophone();
+
 
 function stepFunction() {
     // audio_is_playing = audio.audioIsPlaying();
@@ -83,7 +94,7 @@ function stepFunction() {
         silence_ctr++;
         if (silence_ctr >= 10) {
             // play audio file
-            engine.evaluateResponse(script_step, audio_transcription_m);
+            // engine.evaluateResponse(script_step, audio_transcription_m);
             if (audio_is_playing != true) {
                 console.log('which 2');
             }
@@ -163,7 +174,6 @@ function stepFunction() {
 }
 
 // stepFunction();
-vosk.recognizeFromMicrophone();
 
 let _maxMemoryConsumption = 0;
 let _dtOfMaxMemoryConsumption;
@@ -186,7 +196,10 @@ process
         console.log('ABORT');
         console.log('====================================');
     })
+    .on('beforeExit', (code) => {
+        console.log('Process beforeExit event with code: ', code);
+    })
     .on('exit', function () {
-        console.log(`Max memory consumption: ${_maxMemoryConsumption} at ${_dtOfMaxMemoryConsumption}`);
+        console.log(`Max memory consumption: ${_maxMemoryConsumption / 1000000}MB at ${_dtOfMaxMemoryConsumption}`);
         process.kill(process.pid, 'SIGTERM');
     });

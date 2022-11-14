@@ -1,4 +1,5 @@
 const fs = require('fs');
+const engine = require('./engine');
 var vosk = require('./module/vosk');
 vosk.setLogLevel(0);
 
@@ -195,30 +196,22 @@ class RestartableRecogniser {
             return;
         }
 
-        let result = this.recStream.finalResult();
-        console.log('callbot_vosk _clearRecStream: ', result);
-        console.log('callbot_vosk audio_transcription: ', audio_transcription);
-        this.textCallback(result.text)
-        this.recStream.free();
-        this.recStream = null;
+        if (!que.paused) {
+            let result = this.recStream.finalResult();
+            console.log('callbot_vosk _clearRecStream: ', result);
+            console.log('callbot_vosk audio_transcription: ', audio_transcription);
+            this.textCallback(result.text)
+            this.recStream.free();
+            this.recStream = null;
+        }
     }
 }
 
-var recognizer = new RestartableRecogniser({
-    model: model,
-    textCallback: (data) => {
-        if (data) {
-            audio_transcription = data;
-        } else {
-            audio_transcription = undefined;
-        }
-    },
-});
-
-let vad = new VAD();
 function completedFn(data, completed) {
 
-    recognizer.write(data);
+    if (!audio.audioIsPlaying()) {
+        recognizer.write(data);
+    }
 
     var statusBefore = vad.isSpeech;
     vad.updateInformation(data);
@@ -229,31 +222,89 @@ function completedFn(data, completed) {
     }
 
     const remaining_task = que.length();
+    // console.log('====================================');
+    // console.log("REMAINING: ", remaining_task);
+    // console.log('====================================');
 
     completed(null, { data, remaining_task });
 }
 
+function pauseMicRecognizer() {
+    // recording.pause();
+    recognizer.stop();
+    que.pause();
+}
+
+function resumeMicRecognizer() {
+    // script_step++;
+    // console.log('====================================');
+    // console.log(script_step);
+    // console.log('====================================');
+    // recording.resume();
+    audio_transcription = undefined;
+    recognizer.start();
+    que.resume();
+}
+
+var vad = new VAD();
+let silence_ctr = 0;
+let script_step = 0;
+var recognizer = new RestartableRecogniser({
+    model: model,
+    textCallback: (data) => {
+        if ((audio_transcription == undefined) && !audio.audioIsPlaying() && data) {
+            audio_transcription = data;
+            console.log('caaaall evaluateResponse....');
+            // que.pause();
+            // recording.pause();
+            // recognizer.stop();
+            script_step++;
+            engine.evaluateResponse(script_step, audio_transcription);
+        }
+    },
+});
+
+
+// if (!recording.isPaused()) {
+//     recording.pause();
+//     engine.evaluateResponse(1, audio_transcription);
+// }
+
 function recognizeFromMicrophone() {
     console.log('here vosk-start-1');
     // stepFunction();
-    recognizer.start();
+    // recognizer.start();
+
+    // if(!audio.audioIsPlaying && que.paused) {
+    //     que.resume();
+    // }
 
     recording
         .stream()
         .on('data', function (data) {
-            que.push(data, (err, { data, remaining }) => {
-                console.log('here vosk-start-1-1');
-                notifier.emit('recognize-from-microphone-end');
-                // console.log('Memory Usage: ', process.memoryUsage());
-                if (err) {
-                    console.log(`there is an error  in the task ${data}`);
-                }
+            if (que.length() < 1) {
+                que.push(data, (err, { data, remaining }) => {
+                    console.log('here vosk-start-1-1');
+                    // console.log('====================================');
+                    // console.log(que.length());
+                    // console.log('====================================');
+                    // console.log("recording isPaused: ", recording.isPaused());
+                    // notifier.emit('recognize-from-microphone-end');
+                    // audio_transcription = data;
+                    // console.log('Memory Usage: ', process.memoryUsage());
+                    if (err) {
+                        console.log(`there is an error  in the task ${data}`);
+                    }
+                });
+            } else {
+                console.log('====================================');
+                console.log('what the f*ck do you want !!!');
+                console.log('====================================');
             }
-            );
         })
         .on('end', function () {
             console.log('recording ended')
-            recognizer.stop();
+            // recognizer.stop();
         });
 }
 
@@ -266,4 +317,6 @@ function audioTranscription() {
 module.exports = {
     audioTranscription: audioTranscription,
     recognizeFromMicrophone: recognizeFromMicrophone,
+    pauseMicRecognizer: pauseMicRecognizer,
+    resumeMicRecognizer: resumeMicRecognizer,
 }

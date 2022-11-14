@@ -7,7 +7,7 @@
     "url": "git://github.com/alphacep/vosk-api.git"
   },
   "scripts": {
-    "start": "node engine_test.js",
+    "start": "node --max-old-space-size=512 engine_test.js",
     "start-forever": "forever start engine_test.js",
     "stop-forever": "forever stopall"
   },
@@ -23,13 +23,16 @@
     "node": ">= 12.x.x"
   },
   "dependencies": {
+    "@suldashi/lame": "^1.2.5",
     "async": "^3.2.0",
     "axios": "^1.1.3",
     "chrome-launcher": "^0.15.1",
+    "eventemitter2": "^6.4.9",
     "ffi-napi": "^4.0.3",
     "mic": "^2.1.2",
     "node-cron": "^3.0.2",
     "node-record-lpcm16": "^1.0.1",
+    "play-sound": "^1.1.5",
     "puppeteer": "^19.2.0",
     "ref-napi": ">=2.0.0",
     "sox": "^0.1.0",
