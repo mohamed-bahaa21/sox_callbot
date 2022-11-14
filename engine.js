@@ -149,7 +149,8 @@ function evaluateResponse(script_step, response) {
             else {
                 console.log('engine path 14-5');
                 audio.playFiles(['./sounds/saythatagain.wav'], 0);
-                action = 'back-one';
+                notifier.emit('back-one-step');
+                // action = 'back-one';
             }
             break;
         case 6:

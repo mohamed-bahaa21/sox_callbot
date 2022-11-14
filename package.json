@@ -6,6 +6,11 @@
     "type": "git",
     "url": "git://github.com/alphacep/vosk-api.git"
   },
+  "scripts": {
+    "start": "node engine_test.js",
+    "start-forever": "forever start engine_test.js",
+    "stop-forever": "forever stopall"
+  },
   "main": "ws-to-coqui.js",
   "keywords": [
     "speech",

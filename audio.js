@@ -22,9 +22,9 @@ audio_files = {
 }
 
 function playFiles(audios, idx) {
+  if (!audios[idx]) return;
 
-  var audioStream = fs.createReadStream(audios[idx]);
-
+  var audioStream = fs.createReadStream(audios[idx], { highWaterMark: 10000 });
   var speaker = new Speaker({
     channels: 2,          // 2 channels
     bitDepth: 16,         // 16-bit samples
@@ -33,8 +33,11 @@ function playFiles(audios, idx) {
     //device: 'hw:5,0'
   });
 
-  audioStream.on('open', function () {
+  audioStream.on('error', function (err) {
+    res.end(err);
+  });
 
+  audioStream.on('open', function () {
     // var audio_duration = audio_files[audios[idx]];
     notifier.emit('audio-started-playing');
     audio_is_playing = true;
@@ -46,17 +49,20 @@ function playFiles(audios, idx) {
         }
       })
       .on('close', function () {
+        notifier.emit('audio-finished-playing');
         console.log('finished playing', audios[idx]);
-        idx += 1;
 
-        if (audios[idx]) {
+        audio_is_playing = false;
+        // audioStream.destroy();
+        // speaker.close();
+
+        if (audios[idx + 1]) {
           console.log('If: play next...');
           console.log({
             'audios': audios,
             'idx': idx
           });
-          audioStream.destroy();
-          speaker.close();
+          idx++;
           playFiles(audios, idx);
         } else {
           console.log('Else: play next...');
@@ -64,9 +70,7 @@ function playFiles(audios, idx) {
             'audios': audios,
             'idx': idx
           });
-          audioStream.destroy();
-          speaker.close();
-          audio_is_playing = false;
+          return;
         }
       });
   })
@@ -106,3 +110,4 @@ module.exports = {
   audioIsPlaying: audioIsPlaying,
   //playAudioPromise: playAudioPromise
 }
+

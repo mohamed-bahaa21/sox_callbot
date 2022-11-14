@@ -197,6 +197,7 @@ class RestartableRecogniser {
 
         let result = this.recStream.finalResult();
         console.log('callbot_vosk _clearRecStream: ', result);
+        console.log('callbot_vosk audio_transcription: ', audio_transcription);
         this.textCallback(result.text)
         this.recStream.free();
         this.recStream = null;
@@ -208,6 +209,8 @@ var recognizer = new RestartableRecogniser({
     textCallback: (data) => {
         if (data) {
             audio_transcription = data;
+        } else {
+            audio_transcription = undefined;
         }
     },
 });
@@ -218,9 +221,7 @@ function completedFn(data, completed) {
     recognizer.write(data);
 
     var statusBefore = vad.isSpeech;
-
     vad.updateInformation(data);
-
     var statusNow = vad.isSpeech;
 
     if (statusBefore && !statusNow) {
